@@ -1,6 +1,6 @@
 # TerraByte 개발 인수인계
 
-최종 갱신: 2026-07-23 (Asia/Seoul)
+최종 갱신: 2026-07-24 (Asia/Seoul)
 
 이 문서는 새 Codex 채팅에서 TerraByte 개발을 이어가기 위한 프로젝트 맥락이다. 새 채팅에서는 이 파일과
 `backend/README.md`를 먼저 읽고, Git 상태를 다시 확인한 후 작업을 시작한다.
@@ -49,13 +49,14 @@ git switch -c feature/작업명
 
 ## 3. 현재 Git 상태
 
-2026-07-23 확인 기준:
+2026-07-24 확인 기준:
 
-- 센서 수집 및 환경 적합도 PR #5가 개인 레포 `develop`에 병합됐다.
-- 원격 `origin/develop` 최신 커밋은 `8dccf7a`다.
-- 병합 커밋은 `3e4c220 feat: 센서 데이터 수집 및 환경 적합도 계산 연동 (#5)`이다.
-- 현재 로컬 체크아웃은 `feature/measurement-api`다.
-- 다음 작업 전 로컬 `develop`을 반드시 `origin/develop`과 동기화한다.
+- 작물 선택 API 및 프론트엔드 연동 PR #7이 개인 레포 `develop`에 Squash and merge됐다.
+- 원격 `origin/develop` 최신 커밋은 `289e3a2 feat: 작물 선택 API 및 프론트엔드 연동 (#7)`이다.
+- 로컬 `develop`은 `origin/develop`과 동기화돼 있다.
+- 현재 체크아웃은 인수인계 문서를 관리하는 `docs/project-handoff` 브랜치다.
+- `docs/project-handoff`에는 `develop`의 `289e3a2`까지 병합해 코드 내용을 동기화했다.
+- 다음 기능은 반드시 로컬 `develop`으로 이동해 `origin/develop`을 다시 fetch/pull한 뒤 새 브랜치에서 시작한다.
 - 이 문서 작성 이후에는 실제 `git status`, `git fetch origin`, `git log`로 상태를 다시 확인한다.
 
 ## 4. 구현 완료 항목
@@ -235,32 +236,39 @@ cd ../frontend/app
 npx tsc --noEmit
 ```
 
-마지막 확인 결과:
+2026-07-24 마지막 확인 결과:
 
 - Backend Gradle tests: 성공
 - Frontend TypeScript check: 성공
+- Expo SDK 57 web export: 성공
+- PostgreSQL Flyway V6 적용: 성공
 - `POST /api/telemetry`: `202 Accepted` 확인
 - Frontend `http://localhost:8081`: HTTP 200 확인
 
-## 7. 아직 구현되지 않은 핵심 기능
+## 7. 핵심 기능 우선순위
 
-### 우선순위 1: 작물 선택
+### 완료: 작물 선택
 
-현재 점수 계산은 텔레메트리 JSON의 `context.crop_type`을 사용한다. 사용자가 선택한 작물을 PostgreSQL에 저장하고
-그 작물을 기준으로 점수를 계산하는 흐름은 아직 없다.
+사용자가 선택한 작물을 PostgreSQL에 저장하고 해당 작물의 SQLite 활성 점수 프로필을 기준으로 적합도를 계산한다.
+텔레메트리 JSON의 `context.crop_type`은 측정 당시 컨텍스트로만 저장한다.
 
-- [ ] PostgreSQL 작물 마스터 테이블
-- [ ] `GET /api/crops`
-- [ ] 작물 검색 `GET /api/crops?q=...`
-- [ ] `PATCH /api/devices/{deviceId}/crop`
-- [ ] `/api/me`의 `hasCrop` 실제 계산
-- [ ] 선택 작물과 SQLite 점수 프로필 연결
-- [ ] 작물 API 통합 테스트
-- [ ] 프론트엔드 작물 선택 화면 연동
+- [x] PostgreSQL 작물 마스터 테이블
+- [x] `GET /api/crops`
+- [x] 작물 검색 `GET /api/crops?q=...`
+- [x] `PATCH /api/devices/{deviceId}/crop`
+- [x] `/api/me`의 `hasCrop` 실제 계산
+- [x] 선택 작물과 SQLite 점수 프로필 연결
+- [x] 작물 API 통합 테스트
+- [x] 프론트엔드 작물 선택 화면 연동
 
-추천 브랜치: `feature/crop-selection-api`
+구현 및 병합:
 
-### 우선순위 2: 기기 상태
+- 기능 브랜치: `feature/crop-selection-api`
+- 개인 레포 PR: #7
+- `origin/develop` 병합 커밋: `289e3a2`
+- Flyway: `V6__create_crop_and_add_device_crop.sql`
+
+### 우선순위 1: 기기 상태
 
 - [ ] `GET /api/devices/{deviceId}/status`
 - [ ] 마지막 수신 시각 기반 ONLINE/OFFLINE 판정
@@ -269,7 +277,9 @@ npx tsc --noEmit
 
 추천 브랜치: `feature/device-status-api`
 
-### 우선순위 3: 적합도 이력
+설치 안내 화면은 현재 1.8초 타이머 후 연결 완료로 표시하는 목업이다. 실제 기기 상태 API와 폴링으로 교체해야 한다.
+
+### 우선순위 2: 적합도 이력
 
 - [ ] `GET /api/devices/{deviceId}/scores`
 - [ ] 점수 결과 저장 또는 조회 시 계산 방식 결정
@@ -279,7 +289,7 @@ npx tsc --noEmit
 
 추천 브랜치: `feature/environment-score-history`
 
-### 우선순위 4: 환경 추천
+### 우선순위 3: 환경 추천
 
 - [ ] `GET /api/devices/{deviceId}/recommendations`
 - [ ] 대체 작물 예상 점수 비교
@@ -291,7 +301,7 @@ npx tsc --noEmit
 
 추천 브랜치: `feature/environment-recommendations`
 
-### 우선순위 5: 관수 랜덤포레스트
+### 우선순위 4: 관수 랜덤포레스트
 
 - [ ] ML 입력/출력 계약 확정
 - [ ] 모델 실행 방식 결정(Java 직접 실행 또는 Python 서비스)
@@ -327,8 +337,8 @@ TerraByte 프로젝트 개발을 이어갈 거야.
 먼저 루트의 HANDOFF.md와 backend/README.md를 전부 읽고,
 현재 Git 브랜치·작업 트리·origin/develop·최근 커밋을 확인해줘.
 개인 레포 origin의 develop을 기준으로 작업하고 upstream에는 내가 따로 말하지 않는 한 변경하지 마.
-현재 상황을 짧게 요약한 다음 develop을 최신화하고 feature/crop-selection-api 브랜치를 만들어
-작물 목록 조회 및 작물 선택 API 작업을 시작하자.
+현재 상황을 짧게 요약한 다음 develop을 최신화하고,
+다음 우선순위인 기기 상태 API 요구사항을 확인한 뒤 feature/device-status-api 브랜치를 만들어 작업을 시작하자.
 ```
 
 ## 10. 작업 시 주의사항
